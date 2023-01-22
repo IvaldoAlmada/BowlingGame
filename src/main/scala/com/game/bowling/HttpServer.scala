@@ -10,11 +10,11 @@ object HttpServer extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
     val apis = Router(
-      "/api" -> Routes.scoreRoutes[IO]
+      "/api" -> Routes.gameRoutes[IO]
     ).orNotFound
 
     BlazeServerBuilder[IO](runtime.compute)
-      .bindHttp(8080, "localhost")
+      .bindHttp(8081, "localhost")
       .withHttpApp(apis)
       .resource
       .use(_ => IO.never)
