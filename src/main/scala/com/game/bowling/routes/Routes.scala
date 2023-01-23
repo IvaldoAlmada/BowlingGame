@@ -23,6 +23,10 @@ object Routes {
           case Some(game) => Ok (game.asJson)
           case _ => NotFound(s"No game with id $gameId found")
         }
+      case GET -> Root / "game" / gameId / "score" => ???
+      case POST -> Root / "game"  => ???
+      case PUT -> Root / "game" / "roll" => ???
+      case DELETE -> Root / "game" / gameId => ???
     }
   }
 }

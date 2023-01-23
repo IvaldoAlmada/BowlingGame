@@ -1,4 +1,4 @@
 package com.game.bowling.model
 
-case class Game(id: Int, score: Int)
+case class Game(id: Int, frames: List[Frame])
 

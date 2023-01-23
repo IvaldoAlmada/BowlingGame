@@ -13,5 +13,10 @@ libraryDependencies ++= Seq(
   "org.http4s"      %% "http4s-blaze-server" % Http4sVersion,
   "org.http4s"      %% "http4s-circe"        % Http4sVersion,
   "org.http4s"      %% "http4s-dsl"          % Http4sVersion,
-  "io.circe"        %% "circe-generic"       % CirceVersion
+  "io.circe"        %% "circe-generic"       % CirceVersion,
+)
+
+libraryDependencies ++= Seq(
+  "org.scalactic" %% "scalactic" % "3.2.15",
+  "org.scalatest" %% "scalatest" % "3.2.15" % "test"
 )
