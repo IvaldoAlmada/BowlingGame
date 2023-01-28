@@ -43,9 +43,14 @@ object Routes {
       case req@PUT -> Root / "game" / gameId / "roll" =>
         for {
           roll <- req.as[Roll]
-          updatedGame = gameService.roll(roll, gameId.toInt)
-          res <- Ok(updatedGame)
+          gameWithRoll = gameService.roll(roll, gameId.toInt)
+          res <- gameWithRoll match {
+            case Some(game) => Ok(game)
+            case None => NoContent()
+          }
         } yield res
+
+
       case DELETE -> Root / "game" / gameId =>
         val deletedFiles = gameService.delete(gameId.toInt)
         Ok(s"Deleted $deletedFiles games")
