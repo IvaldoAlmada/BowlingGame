@@ -13,7 +13,6 @@ class GameService() {
 
   def save(game: Game): Option[Game] = {
     gameRepository.save(game)
-    Some(game)
   }
 
   def addRoll(frame: Frame, id: Int): IO[Int] = {

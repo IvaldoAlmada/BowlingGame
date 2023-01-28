@@ -18,19 +18,34 @@ class GameRepository {
     "docker"
   )
 
+
+  //Game
+  def findGameById(id: Int) =
+    sql"select id, name from games where id = $id".query[(Int, String)].option
+  def findGameByName(name: String) =
+    sql"select id, name from games where name = $name".query[(Int, String)].option
+
+  def createGame(name: String) =
+    sql"insert into games (name) values ($name)".update.run
+
+
+  //Frame
+  def createFrame(gameId: Int) =
+    sql"insert into frames (game_id) values ($gameId)".update.run
+  def findFramesByGameId(gameId: Int) =
+    sql"select id, game_id from frames where game_id = $gameId".query[(Int, Int)].to[List]
+
+  //Row
+  def createRow(score: Int, frameId: Int) =
+    sql"insert into rows_ (score, frame_id) values ($score, $frameId)".update.run
+  def findRowsByFrameId(frameId: Int) =
+    sql"select id, score, frame_id from rows_ where frame_id = $frameId".query[(Int, Int, Int)].to[List]
+
+
   def findById(id: Int): Option[Game] = {
 
-    def findGameById() =
-      sql"select id, name from games where id = $id".query[(Int, String)].option
-
-    def findFramesByGameId(gameId: Int) =
-      sql"select id, game_id from frames where game_id = $gameId".query[(Int, Int)].to[List]
-
-    def findRowsByFrameId(frameId: Int) =
-      sql"select id, frame_id, score from rows_ where frame_id = $frameId".query[(Int, Int, Int)].to[List]
-
     val query = for {
-      maybeGame <- findGameById()
+      maybeGame <- findGameById(id)
 
       maybeFrames <- maybeGame match {
         case Some((gameId, _)) => findFramesByGameId(gameId)
@@ -56,15 +71,28 @@ class GameRepository {
       }
 
     }
-
     query.transact(xa).unsafeRunSync()
   }
 
-  def save(game: Game): Int = {
+  def save(game: Game): Option[Game] = {
+    val query = for {
+      gameExists <- findGameByName(game.name.get)
 
-    val saveGame: doobie.ConnectionIO[Int] =
-      sql"insert into games (name) values (${game.name})".update.run
-    saveGame.transact(xa).unsafeRunSync()
+      saveGame <- gameExists match {
+        case None =>
+          createGame(game.name.get)
+      }
+
+      maybeGame <- findGameByName(game.name.get)
+
+
+    } yield {
+      maybeGame.map {
+        case (id, name) => Game(Some(id), Some(name), None)
+      }
+    }
+
+    query.transact(xa).unsafeRunSync()
   }
 
   def delete(id: Int): IO[Int] = {
