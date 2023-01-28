@@ -1,7 +1,9 @@
 package com.game.bowling
 
 import cats.effect.{ExitCode, IO, IOApp}
+import com.game.bowling.model.{Frame, Game}
 import com.game.bowling.routes.Routes
+import doobie.Read
 import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder

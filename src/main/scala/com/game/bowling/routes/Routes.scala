@@ -1,15 +1,17 @@
 package com.game.bowling.routes
 
 import cats.effect.Concurrent
+import cats.effect.unsafe.implicits.global
+import cats.implicits._
 import com.game.bowling.model.{Frame, Game}
 import com.game.bowling.service.GameService
+import doobie.Read
 import io.circe.generic.auto.{exportDecoder, exportEncoder}
 import io.circe.syntax.EncoderOps
+import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
 import org.http4s.circe.{jsonEncoder, jsonOf}
 import org.http4s.dsl.Http4sDsl
 import org.http4s.{EntityDecoder, HttpRoutes}
-import cats.implicits._
-import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
 
 
 object Routes {
@@ -43,14 +45,12 @@ object Routes {
       case req@PUT -> Root / "game" / gameId / "roll" =>
         for {
           frame <- req.as[Frame]
-          updatedGame = gameService.addRoll(frame, gameId.toInt)
+          updatedGame = gameService.addRoll(frame, gameId.toInt).unsafeRunSync()
           res <- Ok(updatedGame)
         } yield res
       case DELETE -> Root / "game" / gameId =>
-        val deletedGame = gameService.delete(gameId.toInt)
-        deletedGame match {
-          case Some(deleted) => Ok(deleted.asJson)
-        }
+        val deletedGame = gameService.delete(gameId.toInt).unsafeRunSync()
+        Ok(deletedGame)
     }
   }
 }
