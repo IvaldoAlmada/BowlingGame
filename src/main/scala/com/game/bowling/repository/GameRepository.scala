@@ -26,6 +26,9 @@ class GameRepository {
   private def createGame(name: String) =
     sql"insert into games (name) values ($name)".update.run
 
+  private def deleteGame(id: Int) =
+    sql"delete from games where id = $id".update.run
+
 
   //Frame
   private def createFrame(gameId: Int, number: Int) =
@@ -132,16 +135,13 @@ class GameRepository {
     query.transact(xa).unsafeRunSync()
   }
 
-  def delete(id: Int): IO[Int] = {
-    val deleteGame: doobie.ConnectionIO[Int] =
-      sql"delete from games where id = $id".update.run
-    deleteGame.transact(xa)
-  }
-
-  def update(game: Game): IO[Int] = {
-    val updateGame: doobie.ConnectionIO[Int] =
-      sql"update games set (name) = ${game.id}".update.run
-    updateGame.transact(xa)
+  def delete(id: Int): Int = {
+    val query = for {
+      deleteResult <- deleteGame(id)
+    } yield {
+      deleteResult
+    }
+    query.transact(xa).unsafeRunSync()
   }
 
 }
