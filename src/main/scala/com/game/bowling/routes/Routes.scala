@@ -3,7 +3,7 @@ package com.game.bowling.routes
 import cats.effect.Concurrent
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
-import com.game.bowling.model.{Frame, Game}
+import com.game.bowling.model.{Frame, Game, Roll}
 import com.game.bowling.service.GameService
 import doobie.Read
 import io.circe.generic.auto.{exportDecoder, exportEncoder}
@@ -44,8 +44,8 @@ object Routes {
         } yield res
       case req@PUT -> Root / "game" / gameId / "roll" =>
         for {
-          frame <- req.as[Frame]
-          updatedGame = gameService.addRoll(frame, gameId.toInt).unsafeRunSync()
+          roll <- req.as[Roll]
+          updatedGame = gameService.roll(roll, gameId.toInt)
           res <- Ok(updatedGame)
         } yield res
       case DELETE -> Root / "game" / gameId =>

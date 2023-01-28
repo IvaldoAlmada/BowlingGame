@@ -16,7 +16,7 @@ CREATE TABLE frames
 ALTER TABLE frames
     ADD FOREIGN KEY (game_id) REFERENCES games (id);
 
-CREATE TABLE rows_
+CREATE TABLE rolls
 (
     id       serial  NOT NULL,
     PRIMARY KEY (id),
@@ -25,5 +25,5 @@ CREATE TABLE rows_
     frame_id integer NOT NULL
 );
 
-ALTER TABLE rows_
+ALTER TABLE rolls
     ADD FOREIGN KEY (frame_id) REFERENCES frames (id);
