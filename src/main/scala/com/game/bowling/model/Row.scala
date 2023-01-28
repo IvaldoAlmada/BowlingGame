@@ -1,3 +1,3 @@
 package com.game.bowling.model
 
-case class Row(id: Option[Int], score: Option[Int])
+case class Row(id: Option[Int], number: Option[Int], score: Option[Int])

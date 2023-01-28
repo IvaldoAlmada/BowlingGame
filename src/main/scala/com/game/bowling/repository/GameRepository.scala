@@ -20,26 +20,26 @@ class GameRepository {
 
 
   //Game
-  def findGameById(id: Int) =
+  private def findGameById(id: Int) =
     sql"select id, name from games where id = $id".query[(Int, String)].option
-  def findGameByName(name: String) =
+  private def findGameByName(name: String) =
     sql"select id, name from games where name = $name".query[(Int, String)].option
 
-  def createGame(name: String) =
+  private def createGame(name: String) =
     sql"insert into games (name) values ($name)".update.run
 
 
   //Frame
-  def createFrame(gameId: Int) =
-    sql"insert into frames (game_id) values ($gameId)".update.run
-  def findFramesByGameId(gameId: Int) =
-    sql"select id, game_id from frames where game_id = $gameId".query[(Int, Int)].to[List]
+  private def createFrame(gameId: Int, number: Int) =
+    sql"insert into frames (game_id, number) values ($gameId, $number)".update.run
+  private def findFramesByGameId(gameId: Int) =
+    sql"select id, number, game_id from frames where game_id = $gameId".query[(Int, Int, Int)].to[List]
 
   //Row
-  def createRow(score: Int, frameId: Int) =
-    sql"insert into rows_ (score, frame_id) values ($score, $frameId)".update.run
-  def findRowsByFrameId(frameId: Int) =
-    sql"select id, score, frame_id from rows_ where frame_id = $frameId".query[(Int, Int, Int)].to[List]
+  private def createRow(number: Int, score: Int, frameId: Int) =
+    sql"insert into rows_ (number, score, frame_id) values ($number, $score, $frameId)".update.run
+  private def findRowsByFrameId(frameId: Int) =
+    sql"select id, number, score, frame_id from rows_ where frame_id = $frameId".query[(Int, Int, Int, Int)].to[List]
 
 
   def findById(id: Int): Option[Game] = {
@@ -49,21 +49,21 @@ class GameRepository {
 
       maybeFrames <- maybeGame match {
         case Some((gameId, _)) => findFramesByGameId(gameId)
-        case None => List.empty[(Int, Int)].pure[ConnectionIO]
+        case None => List.empty[(Int, Int, Int)].pure[ConnectionIO]
       }
       maybeRows <- maybeFrames match {
-        case Nil => List.empty[(Int, Int, Int)].pure[ConnectionIO]
+        case Nil => List.empty[(Int, Int, Int, Int)].pure[ConnectionIO]
         case list => findRowsByFrameId(list.head._1)
       }
     } yield {
       val rows = maybeRows.map {
-        case row => Row(Some(row._1), Some(row._2))
-        case _ => Row(None, None)
+        case row => Row(Some(row._1), Some(row._2), Some(row._3))
+        case _ => Row(None, None, None)
       }
 
       val frames: List[Frame] = maybeFrames.map {
-        case frame => Frame(Some(frame._1), Some(rows))
-        case _ => Frame(None, None)
+        case frame => Frame(Some(frame._1), Some(frame._2), Some(rows))
+        case _ => Frame(None, None, None)
       }
 
       maybeGame.map {
