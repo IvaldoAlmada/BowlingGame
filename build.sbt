@@ -21,7 +21,8 @@ libraryDependencies ++= Seq(
 
   //Test
   "org.scalactic" %% "scalactic" % "3.2.15",
-  "org.scalatest" %% "scalatest" % "3.2.15" % "test",
+  "org.scalatest" %% "scalatest" % "3.2.15" % Test,
+  "org.scalatestplus" %% "mockito-3-4" % "3.2.10.0" % Test,
 
   //database
   "org.tpolecat" %% "doobie-core" % DoobieVersion,
@@ -29,4 +30,3 @@ libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-hikari" % DoobieVersion,
   "io.estatico" %% "newtype" % NewTypeVersion
 )
-
