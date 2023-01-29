@@ -17,7 +17,7 @@ class GameServiceTest extends AnyFlatSpec with Matchers {
     val idToFind = 1
     val roll = Roll(Some(1), Some(1), Some(7), Some(1))
     val frame = Frame(Some(1), Some(1), strike = false, Some(List(roll)))
-    val gameToReturn = Game(Some(1), Some("12345"), Some(List(frame)))
+    val gameToReturn = Game(Some(1), Some("12345"), complete = false, Some(List(frame)))
 
     when(gameRepository.findById(idToFind)).thenReturn(Some(gameToReturn))
     assert(gameService.findById(idToFind).contains(gameToReturn))
@@ -37,7 +37,7 @@ class GameServiceTest extends AnyFlatSpec with Matchers {
     val frame2 = Frame(id = Some(2), number = Some(2), strike = true, rolls = Some(List(roll3)))
     val frame3 = Frame(id = Some(3), number = Some(3), strike = false, rolls = Some(List(roll4, roll5)))
 
-    val game = Game(id = Some(gameId), name = Some("to calculate score"), frames = Some(List(frame1, frame2, frame3)))
+    val game = Game(id = Some(gameId), name = Some("to calculate score"), complete = false, frames = Some(List(frame1, frame2, frame3)))
 
     when(gameRepository.findById(gameId)).thenReturn(Some(game))
     assertResult(44) {

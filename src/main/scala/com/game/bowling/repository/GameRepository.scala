@@ -11,20 +11,23 @@ import doobie.{ConnectionIO, Transactor}
 class GameRepository(private val frameRepository: FrameRepository, private val rollRepository: RollRepository, private val xa: Transactor[IO]) {
 
   private def findGameById(id: Int) =
-    sql"select id, name from games where id = $id".query[(Int, String)].option
+    sql"select id, name, complete from games where id = $id".query[(Int, String, Boolean)].option
   private def findGameByName(name: String) =
-    sql"select id, name from games where name = $name".query[(Int, String)].option
+    sql"select id, name, complete from games where name = $name".query[(Int, String, Boolean)].option
   private def createGame(name: String) =
-    sql"insert into games (name) values ($name)".update.run
-
+    sql"insert into games (name, complete) values ($name, false)".update.run
   private def deleteGame(id: Int) =
     sql"delete from games where id = $id".update.run
+
+  private def completeGame(id: Int) =
+    sql"update games set complete = true where id = $id".update.run
+
   def findById(id: Int): Option[Game] = {
     val query = for {
       maybeGame <- findGameById(id)
 
       maybeFrames <- maybeGame match {
-        case Some((gameId, _)) => frameRepository.findFramesByGameId(gameId)
+        case Some((gameId, _, _)) => frameRepository.findFramesByGameId(gameId)
         case None => List.empty[(Int, Int, Boolean, Int)].pure[ConnectionIO]
       }
       maybeRolls <- maybeFrames match {
@@ -47,7 +50,7 @@ class GameRepository(private val frameRepository: FrameRepository, private val r
       }
 
       maybeGame.map {
-        case (id, name) => Game(Some(id), Some(name), Some(frames))
+        case (id, name, complete) => Game(Some(id), Some(name), complete = complete, Some(frames))
       }
     }
     query.transact(xa).unsafeRunSync()
@@ -60,11 +63,10 @@ class GameRepository(private val frameRepository: FrameRepository, private val r
       _ <- gameExists match {
         case None => createGame(game.name.get)
       }
-
       maybeGame <- findGameByName(game.name.get)
     } yield {
       maybeGame.map {
-        case (id, name) => Game(Some(id), Some(name), None)
+        case (id, name, complete) => Game(Some(id), Some(name), complete, None)
       }
     }
     query.transact(xa).unsafeRunSync()
@@ -75,6 +77,15 @@ class GameRepository(private val frameRepository: FrameRepository, private val r
       deleteResult <- deleteGame(id)
     } yield {
       deleteResult
+    }
+    query.transact(xa).unsafeRunSync()
+  }
+
+  def complete(gameId: Int): Int = {
+    val query = for {
+      completeResult <- completeGame(gameId)
+    } yield {
+      completeResult
     }
     query.transact(xa).unsafeRunSync()
   }

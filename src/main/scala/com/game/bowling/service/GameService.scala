@@ -15,6 +15,9 @@ class GameService(private val gameRepository: GameRepository, private val frameS
     gameRepository.save(game)
   }
 
+  def complete(gameId: Int): Int =
+    gameRepository.complete(gameId)
+
   def roll(rollToSave: Roll, gameId: Int): Option[Game] = {
     val game = findById(gameId)
     game match {

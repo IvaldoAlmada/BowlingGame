@@ -2,6 +2,7 @@ CREATE TABLE games
 (
     id serial NOT NULL,
     name character varying NOT NULL,
+    complete boolean NOT NULL,
     PRIMARY KEY (id)
 );
 

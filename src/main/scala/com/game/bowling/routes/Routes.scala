@@ -27,7 +27,7 @@ object Routes {
   private val gameRepository = new GameRepository(frameRepository, rollRepository, xa)
 
   private val rollService = new RollService(rollRepository)
-  private val frameService = new FrameService(frameRepository, rollService)
+  private val frameService = new FrameService(frameRepository, gameRepository, rollService)
   private val gameService = new GameService(gameRepository, frameService)
 
   def gameRoutes[F[_] : Concurrent]: HttpRoutes[F] = {
@@ -59,7 +59,11 @@ object Routes {
           roll <- req.as[Roll]
           gameWithRoll = gameService.roll(roll, gameId.toInt)
           res <- gameWithRoll match {
-            case Some(game) => Ok(game)
+            case Some(game) =>
+              if(game.complete)
+                NotAcceptable("Cannot add more rolls, game completed")
+              else
+                Ok(game)
             case None => NotFound(s"No game with id $gameId found")
           }
         } yield res

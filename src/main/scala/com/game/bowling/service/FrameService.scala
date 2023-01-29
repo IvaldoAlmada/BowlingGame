@@ -1,11 +1,11 @@
 package com.game.bowling.service
 
 import com.game.bowling.model.{Frame, Game, Roll}
-import com.game.bowling.repository.FrameRepository
+import com.game.bowling.repository.{FrameRepository, GameRepository}
 
 import scala.math.Ordered.orderingToOrdered
 
-class FrameService(private val frameRepository: FrameRepository, private val rollService: RollService) {
+class FrameService(private val frameRepository: FrameRepository, private val gameRepository: GameRepository, private val rollService: RollService) {
 
   def getLastFrame(frames: List[Frame]): Option[Frame] =
     frames.reduceOption((a1, a2) => if (a1.number > a2.number) a1 else a2)
@@ -37,11 +37,16 @@ class FrameService(private val frameRepository: FrameRepository, private val rol
       case Some(frame) =>
         val frameLastRoll = rollService.getLastRoll(frame.rolls.get)
         if ((frameLastRoll.isDefined && frameLastRoll.get.number.get == 2) || frame.strike) {
-          val nextFrameNumber = Some(frame.number.get + 1)
-          val nextFrame = Frame(None, nextFrameNumber, strike, Some(List(rollToSave)))
-          val createdFrame = createFrame(nextFrame, gameId)
-          addRoll(rollToSave, createdFrame.get)
-        } else {
+          if (frame.number.isDefined && frame.number.get == 10) {
+            gameRepository.complete(gameId)
+            Some(frame)
+          } else {
+            val nextFrameNumber = Some(frame.number.get + 1)
+            val nextFrame = Frame(None, nextFrameNumber, strike, Some(List(rollToSave)))
+            val createdFrame = createFrame(nextFrame, gameId)
+            addRoll(rollToSave, createdFrame.get)
+          }
+        }else {
           addRoll(rollToSave, frame)
         }
       case _ =>
