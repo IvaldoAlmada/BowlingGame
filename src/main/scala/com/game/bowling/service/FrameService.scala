@@ -5,10 +5,7 @@ import com.game.bowling.repository.FrameRepository
 
 import scala.math.Ordered.orderingToOrdered
 
-class FrameService() {
-
-  private val frameRepository = new FrameRepository
-  private val rollService = new RollService
+class FrameService(private val frameRepository: FrameRepository, private val rollService: RollService) {
 
   def getLastFrame(frames: List[Frame]): Option[Frame] =
     frames.reduceOption((a1, a2) => if (a1.number > a2.number) a1 else a2)
@@ -35,7 +32,6 @@ class FrameService() {
     frameRepository.findById(createdRoll.get.frameId.get)
   }
 
-
   def insertRoll(lastFrameFromDB: Option[Frame], rollToSave: Roll, gameId: Int, strike: Boolean): Option[Frame] =
     lastFrameFromDB match {
       case Some(frame) =>
@@ -52,5 +48,4 @@ class FrameService() {
         val createdFrame = createFrame(Frame(None, Some(1), strike, Some(List(rollToSave))), gameId)
         addRoll(rollToSave, createdFrame.get)
     }
-
 }

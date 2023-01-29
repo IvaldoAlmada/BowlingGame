@@ -1,9 +1,11 @@
 package com.game.bowling.routes
 
-import cats.effect.Concurrent
+import cats.effect.{Concurrent, IO}
 import cats.implicits._
 import com.game.bowling.model.{Game, Roll}
-import com.game.bowling.service.GameService
+import com.game.bowling.repository.{FrameRepository, GameRepository, RollRepository}
+import com.game.bowling.service.{FrameService, GameService, RollService}
+import doobie.Transactor
 import io.circe.generic.auto.{exportDecoder, exportEncoder}
 import io.circe.syntax.EncoderOps
 import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
@@ -11,10 +13,22 @@ import org.http4s.circe.{jsonEncoder, jsonOf}
 import org.http4s.dsl.Http4sDsl
 import org.http4s.{EntityDecoder, HttpRoutes}
 
-
 object Routes {
 
-  private val gameService: GameService = new GameService
+  private val xa: Transactor[IO] = Transactor.fromDriverManager[IO](
+    "org.postgresql.Driver",
+    "jdbc:postgresql:postgres",
+    "docker",
+    "docker"
+  )
+
+  private val rollRepository = new RollRepository(xa)
+  private val frameRepository = new FrameRepository(rollRepository, xa)
+  private val gameRepository = new GameRepository(frameRepository, rollRepository, xa)
+
+  private val rollService = new RollService(rollRepository)
+  private val frameService = new FrameService(frameRepository, rollService)
+  private val gameService = new GameService(gameRepository, frameService)
 
   def gameRoutes[F[_] : Concurrent]: HttpRoutes[F] = {
     val dsl = Http4sDsl[F]
@@ -49,8 +63,6 @@ object Routes {
             case None => NoContent()
           }
         } yield res
-
-
       case DELETE -> Root / "game" / gameId =>
         val deletedFiles = gameService.delete(gameId.toInt)
         Ok(s"Deleted $deletedFiles games")

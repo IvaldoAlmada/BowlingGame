@@ -3,10 +3,7 @@ package com.game.bowling.service
 import com.game.bowling.model.{Frame, Game, Roll}
 import com.game.bowling.repository.GameRepository
 
-class GameService() {
-
-  private val gameRepository = new GameRepository
-  private val frameService = new FrameService
+class GameService(private val gameRepository: GameRepository, private val frameService: FrameService) {
 
   def findById(id: Int): Option[Game] = {
     gameRepository.findById(id)
@@ -29,7 +26,6 @@ class GameService() {
         None
     }
   }
-
 
   def calculateScore(id: Int): Option[Int] = {
     val game = findById(id)

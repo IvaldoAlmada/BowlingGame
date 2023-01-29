@@ -7,27 +7,14 @@ import com.game.bowling.model.{Frame, Roll}
 import doobie.implicits._
 import doobie.{ConnectionIO, Transactor}
 
-class FrameRepository {
+class FrameRepository(val rollRepository: RollRepository, private val xa: Transactor[IO]) {
 
-  val rollRepository = new RollRepository
-
-  private val xa: Transactor[IO] = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:postgres",
-    "docker",
-    "docker"
-  )
-
-  //Frame
   private def createFrame(gameId: Int, number: Int, strike: Boolean) =
     sql"insert into frames (game_id, number, strike) values ($gameId, $number, $strike)".update.run
-
   def findFramesByGameId(gameId: Int): doobie.ConnectionIO[List[(Int, Int, Boolean, Int)]] =
     sql"select id, number, strike, game_id from frames where game_id = $gameId".query[(Int, Int, Boolean, Int)].to[List]
-
   private def findFrameByGameIdAndNumber(gameId: Int, number: Int) =
     sql"select id, number, strike, game_id from frames where game_id = $gameId and number = $number".query[(Int, Int, Boolean, Int)].option
-
   private def findFrameById(id: Int) =
     sql"select id, number, strike, game_id from frames where id = $id".query[(Int, Int, Boolean, Int)].option
 
@@ -67,9 +54,6 @@ class FrameRepository {
         case (id, number, strike, _) => Frame(Some(id), Some(number), strike, None)
       }
     }
-
     query.transact(xa).unsafeRunSync()
   }
-
-
 }

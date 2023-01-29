@@ -8,30 +8,17 @@ import com.game.bowling.model.{Frame, Game, Roll}
 import doobie.implicits._
 import doobie.{ConnectionIO, Transactor}
 
-class GameRepository {
+class GameRepository(private val frameRepository: FrameRepository, private val rollRepository: RollRepository, private val xa: Transactor[IO]) {
 
-  private val frameRepository = new FrameRepository
-  private val rollRepository = new RollRepository
-
-  private val xa: Transactor[IO] = Transactor.fromDriverManager[IO](
-    "org.postgresql.Driver",
-    "jdbc:postgresql:postgres",
-    "docker",
-    "docker"
-  )
-
-
-  //Game
   private def findGameById(id: Int) =
     sql"select id, name from games where id = $id".query[(Int, String)].option
   private def findGameByName(name: String) =
     sql"select id, name from games where name = $name".query[(Int, String)].option
-
   private def createGame(name: String) =
     sql"insert into games (name) values ($name)".update.run
+
   private def deleteGame(id: Int) =
     sql"delete from games where id = $id".update.run
-
   def findById(id: Int): Option[Game] = {
     val query = for {
       maybeGame <- findGameById(id)
