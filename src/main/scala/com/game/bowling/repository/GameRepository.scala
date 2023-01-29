@@ -1,21 +1,17 @@
 package com.game.bowling.repository
 
+import cats.data._
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import cats.implicits.catsSyntaxApplicativeId
 import com.game.bowling.model.{Frame, Game, Roll}
+import doobie.implicits._
 import doobie.{ConnectionIO, Transactor}
-import doobie.implicits._
-
-import doobie._
-import doobie.implicits._
-import doobie.util.ExecutionContexts
-import cats._
-import cats.data._
-import cats.effect._
-import cats.implicits._
 
 class GameRepository {
+
+  private val frameRepository = new FrameRepository
+  private val rollRepository = new RollRepository
 
   private val xa: Transactor[IO] = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
@@ -36,47 +32,19 @@ class GameRepository {
   private def deleteGame(id: Int) =
     sql"delete from games where id = $id".update.run
 
-
-  //Frame
-  private def createFrame(gameId: Int, number: Int) =
-    sql"insert into frames (game_id, number) values ($gameId, $number)".update.run
-  private def findFramesByGameId(gameId: Int) =
-    sql"select id, number, game_id from frames where game_id = $gameId".query[(Int, Int, Int)].to[List]
-  private def findFrameByGameIdAndNumber(gameId: Int, number: Int) =
-    sql"select id, number, game_id from frames where game_id = $gameId and number = $number".query[(Int, Int, Int)].option
-
-  //Roll
-  private def createRoll(number: Int, score: Int, frameId: Int) =
-    sql"insert into rolls (number, score, frame_id) values ($number, $score, $frameId)".update.run
-  private def findRollsByFrameId(frameId: Int) =
-    sql"select id, number, score, frame_id from rolls where frame_id = $frameId".query[(Int, Int, Int, Int)].to[List]
-
-  private def findRollsByFrameIdList(frameIdList: NonEmptyList[Int]) = {
-    val query = fr"""select id, number, score, frame_id
-        from rolls
-        where """ ++ Fragments.in(fr"frame_id", frameIdList)
-
-    query.query[(Int, Int, Int, Int)].to[List]
-  }
-
-  private def findRollByFrameIdAndNumber(frameId: Int, number: Int) =
-    sql"select id, number, score, frame_id from rolls where frame_id = $frameId and number = $number".query[(Int, Int, Int, Int)].option
-
-
   def findById(id: Int): Option[Game] = {
-
     val query = for {
       maybeGame <- findGameById(id)
 
       maybeFrames <- maybeGame match {
-        case Some((gameId, _)) => findFramesByGameId(gameId)
-        case None => List.empty[(Int, Int, Int)].pure[ConnectionIO]
+        case Some((gameId, _)) => frameRepository.findFramesByGameId(gameId)
+        case None => List.empty[(Int, Int, Boolean, Int)].pure[ConnectionIO]
       }
       maybeRolls <- maybeFrames match {
         case Nil => List.empty[(Int, Int, Int, Int)].pure[ConnectionIO]
         case frameList =>
           val frameIds = frameList.map(tuple => tuple._1)
-          findRollsByFrameIdList(NonEmptyList.fromList(frameIds).get)
+          rollRepository.findRollsByFrameIdList(NonEmptyList.fromList(frameIds).get)
       }
     } yield {
       val rolls = maybeRolls.map {
@@ -87,14 +55,13 @@ class GameRepository {
       val frames: List[Frame] = maybeFrames.map {
         case frame =>
           val frameRolls = rolls.filter(roll => roll.frameId.get == frame._1)
-          Frame(Some(frame._1), Some(frame._2), Some(frameRolls))
-        case _ => Frame(None, None, None)
+          Frame(Some(frame._1), Some(frame._2), frame._3, Some(frameRolls))
+        case _ => Frame(None, None, strike = false, None)
       }
 
       maybeGame.map {
         case (id, name) => Game(Some(id), Some(name), Some(frames))
       }
-
     }
     query.transact(xa).unsafeRunSync()
   }
@@ -108,48 +75,9 @@ class GameRepository {
       }
 
       maybeGame <- findGameByName(game.name.get)
-
-
     } yield {
       maybeGame.map {
         case (id, name) => Game(Some(id), Some(name), None)
-      }
-    }
-
-    query.transact(xa).unsafeRunSync()
-  }
-
-  def save(frame: Frame, gameId: Int): Option[Frame] = {
-    val query = for {
-      frameExists <- findFrameByGameIdAndNumber(gameId, frame.number.get)
-
-      _ <- frameExists match {
-        case None => createFrame(gameId, frame.number.get)
-      }
-
-      maybeFrame <- findFrameByGameIdAndNumber(gameId, frame.number.get)
-    } yield {
-      maybeFrame.map {
-        case (id, number, _) => Frame(Some(id), Some(number), None)
-      }
-    }
-
-    query.transact(xa).unsafeRunSync()
-  }
-
-  def save(roll: Roll, rollNumber: Int, frameId: Int): Option[Roll] = {
-    val rollScore = roll.score.get
-    val query = for {
-      rollExists <- findRollByFrameIdAndNumber(frameId, rollNumber)
-
-      _ <- rollExists match {
-        case None => createRoll(rollNumber, rollScore, frameId)
-      }
-
-      maybeRoll <- findRollByFrameIdAndNumber(frameId, rollNumber)
-    } yield {
-      maybeRoll.map {
-        case (id, number, score, _) => Roll(Some(id), Some(number), Some(score), None)
       }
     }
     query.transact(xa).unsafeRunSync()
@@ -163,5 +91,4 @@ class GameRepository {
     }
     query.transact(xa).unsafeRunSync()
   }
-
 }

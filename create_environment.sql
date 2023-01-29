@@ -10,6 +10,7 @@ CREATE TABLE frames
     id      serial  NOT NULL,
     PRIMARY KEY (id),
     number integer NOT NULL,
+    strike boolean NOT NULL,
     game_id integer NOT NULL
 );
 
