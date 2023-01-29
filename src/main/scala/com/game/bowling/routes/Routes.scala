@@ -60,7 +60,7 @@ object Routes {
           gameWithRoll = gameService.roll(roll, gameId.toInt)
           res <- gameWithRoll match {
             case Some(game) => Ok(game)
-            case None => NoContent()
+            case None => NotFound(s"No game with id $gameId found")
           }
         } yield res
       case DELETE -> Root / "game" / gameId =>
