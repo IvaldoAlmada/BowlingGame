@@ -17,33 +17,40 @@ class GameService() {
     gameRepository.save(game)
   }
 
-  def roll(roll: Roll, id: Int): Option[Game] = {
-    val game = findById(id)
+  def roll(rollToSave: Roll, gameId: Int): Option[Game] = {
+    val game = findById(gameId)
     game match {
-      case Some(game) => {
+      case Some(game) =>
         val frames: List[Frame] = game.frames match {
           case Some(frameList) => frameList
           case _ => List.empty[Frame]
         }
         val lastFrameFromDB: Option[Frame] = frames.reduceOption((a1, a2) => if (a1.number > a2.number) a1 else a2)
-        val lastFrame = lastFrameFromDB match {
-          case Some(frame) => frame
-          case _ => createFrame(Frame(None, Some(1), None), id).get
+
+        val lastFrame: Option[Frame] = lastFrameFromDB match {
+          case Some(frame) =>
+            val nextFrameNumber = Some(frame.number.get + 1)
+            val nextFrame = Frame(None, nextFrameNumber, None)
+            createFrame(nextFrame, gameId)
+          case _ => createFrame(Frame(None, Some(1), None), gameId)
         }
 
-        val rolls: List[Roll] = lastFrame.rolls match {
+        val rolls: List[Roll] = lastFrame.get.rolls match {
           case Some(rollList) => rollList
           case _ => List.empty[Roll]
         }
 
-        val lastRollFromDB: Option[Roll] = rolls.reduceOption((a1, a2) => if(a1.number > a2.number) a1 else a2)
-        val lastRoll = lastRollFromDB match {
-          case Some(roll) => roll
-          case _ => createRoll(roll, lastFrame.id.get)
+        val lastRollFromDB: Option[Roll] = rolls.reduceOption((a1, a2) => if (a1.number > a2.number) a1 else a2)
+
+        lastRollFromDB match {
+          case Some(roll) =>
+            val nextRollNumber = roll.number.get + 1
+            val nextRoll = Roll(None, None, rollToSave.score, None)
+            createRoll(nextRoll, nextRollNumber, lastFrame.get.id.get)
+          case _ => createRoll(rollToSave, 1, lastFrame.get.id.get)
         }
 
-        findById(id)
-      }
+        findById(gameId)
       case _ =>
         None
     }
@@ -53,8 +60,8 @@ class GameService() {
     gameRepository.save(frame, gameId)
   }
 
-  def createRoll(roll: Roll, frameId: Int): Option[Roll] = {
-    gameRepository.save(roll, frameId)
+  def createRoll(roll: Roll, rollNumber: Int, frameId: Int): Option[Roll] = {
+    gameRepository.save(roll, rollNumber, frameId)
   }
 
   def calculateScore(id: Int): Option[Int] = {
