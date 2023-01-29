@@ -3,6 +3,8 @@ package com.game.bowling.service
 import com.game.bowling.model.{Frame, Game, Roll}
 import com.game.bowling.repository.GameRepository
 
+import scala.annotation.tailrec
+
 class GameService(private val gameRepository: GameRepository, private val frameService: FrameService) {
 
   def findById(id: Int): Option[Game] = {
@@ -21,6 +23,7 @@ class GameService(private val gameRepository: GameRepository, private val frameS
         val lastFrameFromDB: Option[Frame] = frameService.getLastFrame(frames)
         val strike = rollToSave.score.contains(10)
         frameService.insertRoll(lastFrameFromDB, rollToSave, gameId, strike)
+
         findById(gameId)
       case _ =>
         None
@@ -32,25 +35,25 @@ class GameService(private val gameRepository: GameRepository, private val frameS
     game match {
       case Some(game) =>
         val frames: List[FrameDTO] = convertFrameToDTO(game.frames.get)
-
-        def sumScore(framesLeft: List[FrameDTO], total: Int): Int = {
-          var tempTotal = framesLeft.head.sum
-          if (framesLeft.tail != Nil && framesLeft.head.sum == 10) {
-            tempTotal += framesLeft(1).roll1
-            if (framesLeft.head.strike) {
-              if (!framesLeft(1).strike) tempTotal += framesLeft(1).roll2
-              else tempTotal += framesLeft(2).roll1
-            }
-          }
-          if (framesLeft.tail.nonEmpty && (frames.size - framesLeft.tail.size) < 10) sumScore(framesLeft.tail, total + tempTotal)
-          else total + tempTotal
-        }
-
-        val score = sumScore(frames, 0)
+        val score = sumScore(frames, frames.size, 0)
         Some(score)
       case _ =>
         None
     }
+  }
+
+  @tailrec
+  private def sumScore(framesLeft: List[FrameDTO], framesSize: Int, total: Int): Int = {
+    var tempTotal = framesLeft.head.sum
+    if (framesLeft.tail != Nil && framesLeft.head.sum == 10) {
+      tempTotal += framesLeft(1).roll1
+      if (framesLeft.head.strike) {
+        if (!framesLeft(1).strike) tempTotal += framesLeft(1).roll2
+        else tempTotal += framesLeft(2).roll1
+      }
+    }
+    if (framesLeft.tail.nonEmpty && (framesSize - framesLeft.tail.size) < 10) sumScore(framesLeft.tail, framesSize, total + tempTotal)
+    else total + tempTotal
   }
 
   private def convertFrameToDTO(frames: List[Frame]): List[FrameDTO] =
