@@ -41,7 +41,7 @@ class GameServiceTest extends AnyFlatSpec with Matchers {
 
     when(gameRepository.findById(gameId)).thenReturn(Some(game))
     assertResult(44) {
-      gameService.calculateScore(gameId)
+      gameService.calculateScore(gameId).get
     }
   }
 }
