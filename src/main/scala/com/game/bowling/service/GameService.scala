@@ -47,13 +47,12 @@ class GameService(private val gameRepository: GameRepository, private val frameS
 
   @tailrec
   private def sumScore(frames: List[FrameDTO], framesSize: Int, total: Int): Int = {
-    var tempTotal = frames.headOption.getOrElse(FrameDTO(0, strike = false, 0)).sum
-    if (frames.tail != Nil && frames.head.sum == 10) {
-      tempTotal += frames(1).roll1
+    val tempTotal = frames.headOption.getOrElse(FrameDTO(0, strike = false, 0)).sum
+    val frameResult = if (frames.tail != Nil && frames.head.sum == 10) {
       val strikeResult: Int = getStrikeResult(frames)
-      tempTotal += strikeResult
-    }
-    if (frames.tail.nonEmpty && (framesSize - frames.tail.size) < 10) sumScore(frames.tail, framesSize, total + tempTotal)
+      frames(1).roll1 + strikeResult
+    } else 0
+    if (frames.tail.nonEmpty && (framesSize - frames.tail.size) < 10) sumScore(frames.tail, framesSize, total + tempTotal + frameResult)
     else total + tempTotal
   }
 
