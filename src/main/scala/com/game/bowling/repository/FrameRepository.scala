@@ -27,13 +27,11 @@ class FrameRepository(val rollRepository: RollRepository, private val xa: Transa
         case None => List.empty[(Int, Int, Int, Int)].pure[ConnectionIO]
       }
     } yield {
-      val rolls: List[Roll] = maybeRolls.map {
-        case roll => Roll(Some(roll._1), Some(roll._2), Some(roll._3), None)
-        case _ => Roll(None, None, None, None)
-      }
+      val rolls: List[Roll] = maybeRolls.map(roll => Roll(Some(roll._1), Some(roll._2), Some(roll._3), None))
 
-      maybeFrame.map {
-        case (id, number, strike, _) => Frame(Some(id), Some(number), strike, Some(rolls))
+      maybeFrame match {
+        case Some(frame) => Some(Frame(Some(frame._1), Some(frame._2), frame._3, Some(rolls)))
+        case _ => None
       }
     }
     query.transact(xa).unsafeRunSync()
@@ -45,8 +43,8 @@ class FrameRepository(val rollRepository: RollRepository, private val xa: Transa
 
       _ <- frameExists match {
         case None => createFrame(gameId, frame.number.get, frame.strike)
+        case Some(queryReturn) => queryReturn.pure[ConnectionIO]
       }
-
       maybeFrame <- findFrameByGameIdAndNumber(gameId, frame.number.get)
     } yield {
       maybeFrame.map {

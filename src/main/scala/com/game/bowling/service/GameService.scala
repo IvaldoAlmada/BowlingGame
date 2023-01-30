@@ -1,6 +1,6 @@
 package com.game.bowling.service
 
-import com.game.bowling.model.{Frame, Game, Roll}
+import com.game.bowling.model.{Frame, FrameDTO, Game, Roll}
 import com.game.bowling.repository.GameRepository
 
 import scala.annotation.tailrec
@@ -47,15 +47,16 @@ class GameService(private val gameRepository: GameRepository, private val frameS
 
   @tailrec
   private def sumScore(framesLeft: List[FrameDTO], framesSize: Int, total: Int): Int = {
-    var tempTotal = framesLeft.head.sum
-    if (framesLeft.tail != Nil && framesLeft.head.sum == 10) {
+
+    var tempTotal = framesLeft.headOption.getOrElse(FrameDTO(0, strike = false, 0)).sum
+    if (framesLeft.nonEmpty && framesLeft.head.sum == 10) {
       tempTotal += framesLeft(1).roll1
       if (framesLeft.head.strike) {
         if (!framesLeft(1).strike) tempTotal += framesLeft(1).roll2
         else tempTotal += framesLeft(2).roll1
       }
     }
-    if (framesLeft.tail.nonEmpty && (framesSize - framesLeft.tail.size) < 10) sumScore(framesLeft.tail, framesSize, total + tempTotal)
+    if (framesLeft.nonEmpty && framesLeft.tail.nonEmpty && (framesSize - framesLeft.tail.size) < 10) sumScore(framesLeft.tail, framesSize, total + tempTotal)
     else total + tempTotal
   }
 
@@ -66,10 +67,6 @@ class GameService(private val gameRepository: GameRepository, private val frameS
       val secondScore = if (frame.strike) 0 else rolls.last.score.get
       FrameDTO(firstRoll.score.get, frame.strike, secondScore)
     })
-
-  case class FrameDTO(roll1: Int, strike: Boolean, roll2: Int) {
-    def sum: Int = roll1 + roll2
-  }
 
   def delete(id: Int): Int = {
     gameRepository.delete(id)

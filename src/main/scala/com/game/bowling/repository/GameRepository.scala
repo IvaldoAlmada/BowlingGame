@@ -37,16 +37,12 @@ class GameRepository(private val frameRepository: FrameRepository, private val r
           rollRepository.findRollsByFrameIdList(NonEmptyList.fromList(frameIds).get)
       }
     } yield {
-      val rolls = maybeRolls.map {
-        case roll => Roll(Some(roll._1), Some(roll._2), Some(roll._3), Some(roll._4))
-        case _ => Roll(None, None, None, None)
-      }
+      val rolls = maybeRolls.map(roll => Roll(Some(roll._1), Some(roll._2), Some(roll._3), Some(roll._4)))
 
       val frames: List[Frame] = maybeFrames.map {
-        case frame =>
+        frame =>
           val frameRolls = rolls.filter(roll => roll.frameId.get == frame._1)
           Frame(Some(frame._1), Some(frame._2), frame._3, Some(frameRolls))
-        case _ => Frame(None, None, strike = false, None)
       }
 
       maybeGame.map {
@@ -62,6 +58,7 @@ class GameRepository(private val frameRepository: FrameRepository, private val r
 
       _ <- gameExists match {
         case None => createGame(game.name.get)
+        case Some(queryReturn) => queryReturn.pure[ConnectionIO]
       }
       maybeGame <- findGameByName(game.name.get)
     } yield {

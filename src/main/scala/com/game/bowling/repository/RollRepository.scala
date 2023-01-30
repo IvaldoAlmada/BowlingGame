@@ -3,6 +3,7 @@ package com.game.bowling.repository
 import cats.data._
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import cats.implicits.catsSyntaxApplicativeId
 import com.game.bowling.model.Roll
 import doobie._
 import doobie.implicits._
@@ -27,13 +28,13 @@ class RollRepository(private val xa: Transactor[IO]) {
 
       _ <- rollExists match {
         case None => createRoll(rollNumber, rollScore, frameId)
+        case Some(queryReturn) => queryReturn.pure[ConnectionIO]
       }
 
       maybeRoll <- findRollByFrameIdAndNumber(frameId, rollNumber)
     } yield {
-      maybeRoll.map {
-        case (id, number, score, frameId) => Roll(Some(id), Some(number), Some(score), Some(frameId))
-      }
+      maybeRoll.map(roll => Roll(Some(roll._1), Some(roll._2), Some(roll._3), Some(frameId)))
+
     }
     query.transact(xa).unsafeRunSync()
   }
