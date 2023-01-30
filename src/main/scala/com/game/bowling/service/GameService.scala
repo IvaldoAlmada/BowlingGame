@@ -46,18 +46,29 @@ class GameService(private val gameRepository: GameRepository, private val frameS
   }
 
   @tailrec
-  private def sumScore(framesLeft: List[FrameDTO], framesSize: Int, total: Int): Int = {
-
-    var tempTotal = framesLeft.headOption.getOrElse(FrameDTO(0, strike = false, 0)).sum
-    if (framesLeft.nonEmpty && framesLeft.head.sum == 10) {
-      tempTotal += framesLeft(1).roll1
-      if (framesLeft.head.strike) {
-        if (!framesLeft(1).strike) tempTotal += framesLeft(1).roll2
-        else tempTotal += framesLeft(2).roll1
-      }
+  private def sumScore(frames: List[FrameDTO], framesSize: Int, total: Int): Int = {
+    var tempTotal = frames.headOption.getOrElse(FrameDTO(0, strike = false, 0)).sum
+    if (frames.tail != Nil && frames.head.sum == 10) {
+      tempTotal += frames(1).roll1
+      val strikeResult: Int = getStrikeResult(frames)
+      tempTotal += strikeResult
     }
-    if (framesLeft.nonEmpty && framesLeft.tail.nonEmpty && (framesSize - framesLeft.tail.size) < 10) sumScore(framesLeft.tail, framesSize, total + tempTotal)
+    if (frames.tail.nonEmpty && (framesSize - frames.tail.size) < 10) sumScore(frames.tail, framesSize, total + tempTotal)
     else total + tempTotal
+  }
+
+  private def getStrikeResult(framesLeft: List[FrameDTO]): Int = {
+    if (framesLeft.head.strike) {
+      if (framesLeft.size > 2) {
+        if (framesLeft(1).strike) framesLeft(2).roll1
+        else framesLeft(1).roll2
+      } else {
+        if (framesLeft(1).strike) framesLeft(1).roll1 * 3
+        else framesLeft(1).roll1 + framesLeft(1).roll2
+      }
+    } else {
+      0
+    }
   }
 
   private def convertFrameToDTO(frames: List[Frame]): List[FrameDTO] =
