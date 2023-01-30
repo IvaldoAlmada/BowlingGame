@@ -12,12 +12,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8081/api/game/4",
+					"raw": "http://localhost:8080/api/game/4",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8081",
+					"port": "8080",
 					"path": [
 						"api",
 						"game",
@@ -33,12 +33,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8081/api/game/1/score",
+					"raw": "http://localhost:8080/api/game/1/score",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8081",
+					"port": "8080",
 					"path": [
 						"api",
 						"game",
@@ -64,12 +64,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8081/api/game",
+					"raw": "http://localhost:8080/api/game",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8081",
+					"port": "8080",
 					"path": [
 						"api",
 						"game"
@@ -93,12 +93,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8081/api/game/1/roll",
+					"raw": "http://localhost:8080/api/game/1/roll",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8081",
+					"port": "8080",
 					"path": [
 						"api",
 						"game",
@@ -115,12 +115,12 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8081/api/game/2",
+					"raw": "http://localhost:8080/api/game/2",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8081",
+					"port": "8080",
 					"path": [
 						"api",
 						"game",

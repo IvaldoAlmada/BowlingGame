@@ -5,7 +5,7 @@ lazy val root = (project in file("."))
     version := "0.1.0-SNAPSHOT",
     scalaVersion := "2.13.10",
     organization := "com.game.bowling",
-    Compile / mainClass := Some("com.game.bowling.HttpServer"),
+    assembly / mainClass := Some("com.game.bowling.HttpServer"),
     assembly / assemblyJarName := "BowlingGame.jar"
   )
 
@@ -20,7 +20,8 @@ libraryDependencies ++= Seq(
   "org.http4s" %% "http4s-dsl" % Http4sVersion,
 
   "io.circe" %% "circe-generic" % CirceVersion,
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
+
+  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.19.0",
 
   //Test
   "org.scalactic" %% "scalactic" % "3.2.15",
