@@ -1,10 +1,12 @@
-ThisBuild / version := "0.1.0-SNAPSHOT"
-
-ThisBuild / scalaVersion := "2.13.10"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "BowlingGame"
+    name := "BowlingGame",
+    version := "0.1.0-SNAPSHOT",
+    scalaVersion := "2.13.10",
+    organization := "com.game.bowling",
+    Compile / mainClass := Some("com.game.bowling.HttpServer"),
+    assembly / assemblyJarName := "BowlingGame.jar"
   )
 
 val Http4sVersion = "1.0.0-M21"

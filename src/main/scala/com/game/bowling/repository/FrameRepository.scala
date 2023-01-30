@@ -28,8 +28,7 @@ class FrameRepository(val rollRepository: RollRepository, private val xa: Transa
       }
     } yield {
       val rolls: List[Roll] = maybeRolls.map {
-        case roll =>
-          Roll(Some(roll._1), Some(roll._2), Some(roll._3), None)
+        case roll => Roll(Some(roll._1), Some(roll._2), Some(roll._3), None)
         case _ => Roll(None, None, None, None)
       }
 
