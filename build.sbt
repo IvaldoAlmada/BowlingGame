@@ -20,6 +20,7 @@ libraryDependencies ++= Seq(
   "org.http4s" %% "http4s-dsl" % Http4sVersion,
 
   "io.circe" %% "circe-generic" % CirceVersion,
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
 
   //Test
   "org.scalactic" %% "scalactic" % "3.2.15",

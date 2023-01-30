@@ -1,8 +1,8 @@
 CREATE TABLE games
 (
-    id serial NOT NULL,
-    name character varying NOT NULL,
-    complete boolean NOT NULL,
+    id       serial            NOT NULL,
+    name     character varying NOT NULL,
+    complete boolean           NOT NULL,
     PRIMARY KEY (id)
 );
 
@@ -10,8 +10,8 @@ CREATE TABLE frames
 (
     id      serial  NOT NULL,
     PRIMARY KEY (id),
-    number integer NOT NULL,
-    strike boolean NOT NULL,
+    number  integer NOT NULL,
+    strike  boolean NOT NULL,
     game_id integer NOT NULL
 );
 
@@ -22,7 +22,7 @@ CREATE TABLE rolls
 (
     id       serial  NOT NULL,
     PRIMARY KEY (id),
-    number integer NOT NULL,
+    number   integer NOT NULL,
     score    integer,
     frame_id integer NOT NULL
 );

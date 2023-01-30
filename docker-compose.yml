@@ -9,5 +9,12 @@ services:
     environment:
       - "POSTGRES_USER=docker"
       - "POSTGRES_PASSWORD=docker"
+      - "POSTGRES_DB=postgres"
     ports:
       - "5432:5432"
+  bowling:
+    build:
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - 8080:8080
