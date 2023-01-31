@@ -2,7 +2,6 @@ package com.game.bowling.repository
 
 import cats.data._
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
 import cats.implicits.catsSyntaxApplicativeId
 import com.game.bowling.model.Roll
 import doobie._
@@ -21,7 +20,7 @@ class RollRepository(private val xa: Transactor[IO]) {
   private def findRollByFrameIdAndNumber(frameId: Int, number: Int) =
     sql"select id, number, score, frame_id from rolls where frame_id = $frameId and number = $number".query[(Int, Int, Int, Int)].option
 
-  def save(roll: Roll, rollNumber: Int, frameId: Int): Option[Roll] = {
+  def save(roll: Roll, rollNumber: Int, frameId: Int): IO[Option[Roll]] = {
     val rollScore = roll.score.get
     val query = for {
       rollExists <- findRollByFrameIdAndNumber(frameId, rollNumber)
@@ -36,6 +35,6 @@ class RollRepository(private val xa: Transactor[IO]) {
       maybeRoll.map(roll => Roll(Some(roll._1), Some(roll._2), Some(roll._3), Some(frameId)))
 
     }
-    query.transact(xa).unsafeRunSync()
+    query.transact(xa)
   }
 }

@@ -1,5 +1,6 @@
 package com.game.bowling.service
 
+import cats.effect.IO
 import com.game.bowling.model.{Frame, FrameDTO, Game, Roll}
 import com.game.bowling.repository.GameRepository
 
@@ -7,18 +8,18 @@ import scala.annotation.tailrec
 
 class GameService(private val gameRepository: GameRepository, private val frameService: FrameService) {
 
-  def findById(id: Int): Option[Game] = {
+  def findById(id: Int): IO[Option[Game]] = {
     gameRepository.findById(id)
   }
 
-  def save(game: Game): Option[Game] = {
+  def save(game: Game): IO[Option[Game]] = {
     gameRepository.save(game)
   }
 
-  def complete(gameId: Int): Int =
+  def complete(gameId: Int): IO[Int] =
     gameRepository.complete(gameId)
 
-  def roll(rollToSave: Roll, gameId: Int): Option[Game] = {
+  def roll(rollToSave: Roll, gameId: Int): IO[Option[Game]] = {
     val game = findById(gameId)
     game match {
       case Some(game) =>
@@ -78,7 +79,7 @@ class GameService(private val gameRepository: GameRepository, private val frameS
       FrameDTO(firstRoll.score.get, frame.strike, secondScore)
     })
 
-  def delete(id: Int): Int = {
+  def delete(id: Int): IO[Int] = {
     gameRepository.delete(id)
   }
 
