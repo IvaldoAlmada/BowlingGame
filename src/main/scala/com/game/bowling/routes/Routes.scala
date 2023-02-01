@@ -1,5 +1,6 @@
 package com.game.bowling.routes
 
+import cats.effect.unsafe.implicits.global
 import cats.effect.{Concurrent, IO}
 import cats.implicits._
 import com.game.bowling.model.{Game, Roll}
@@ -37,34 +38,30 @@ object Routes {
     implicit val rollDecoder: EntityDecoder[F, Roll] = jsonOf[F, Roll]
     HttpRoutes.of[F] {
       case GET -> Root / "game" / gameId =>
-        val gameById = gameService.findById(gameId.toInt)
+        val gameById = gameService.findById(gameId.toInt).unsafeRunSync()
         gameById match {
-          case Some(game) => Ok(game.asJson)
+          case game => Ok(game.asJson)
           case _ => NotFound(s"No game with id $gameId found")
         }
       case GET -> Root / "game" / gameId / "score" =>
-        val gameScore = gameService.calculateScore(gameId.toInt)
+        val gameScore = gameService.calculateScore(gameId.toInt).unsafeRunSync()
         gameScore match {
-          case Some(score) => Ok(score.asJson)
+          case score => Ok(score.asJson)
           case _ => NotFound(s"Is Not possible to calculate score from game: $gameId")
         }
       case req@POST -> Root / "game" =>
         for {
           game <- req.as[Game]
-          savedGame = gameService.save(game)
+          savedGame = gameService.save(game).unsafeRunSync()
           res <- Ok(savedGame)
         } yield res
       case req@PUT -> Root / "game" / gameId / "roll" =>
         for {
           roll <- req.as[Roll]
-          gameWithRoll = gameService.roll(roll, gameId.toInt)
+          gameWithRoll = gameService.roll(roll, gameId.toInt).unsafeRunSync()
           res <- gameWithRoll match {
-            case Some(game) =>
-              if(game.complete)
-                NotAcceptable("Cannot add more rolls, game completed")
-              else
-                Ok(game)
-            case None => NotFound(s"No game with id $gameId found")
+            case game => Ok(game)
+            case _ => NotFound(s"No game with id $gameId found")
           }
         } yield res
       case DELETE -> Root / "game" / gameId =>
