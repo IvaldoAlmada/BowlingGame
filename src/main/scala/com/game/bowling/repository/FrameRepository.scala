@@ -8,47 +8,52 @@ import doobie.{ConnectionIO, Transactor}
 
 class FrameRepository(val rollRepository: RollRepository, private val xa: Transactor[IO]) {
 
-  private def createFrame(gameId: Int, number: Int, strike: Boolean) =
+  private def createFrame(gameId: Int, number: Option[Int], strike: Boolean) =
     sql"insert into frames (game_id, number, strike) values ($gameId, $number, $strike)".update.run
   def findFramesByGameId(gameId: Int): doobie.ConnectionIO[List[(Int, Int, Boolean, Int)]] =
     sql"select id, number, strike, game_id from frames where game_id = $gameId".query[(Int, Int, Boolean, Int)].to[List]
-  private def findFrameByGameIdAndNumber(gameId: Int, number: Int) =
-    sql"select id, number, strike, game_id from frames where game_id = $gameId and number = $number".query[(Int, Int, Boolean, Int)].option
-  private def findFrameById(id: Int) =
-    sql"select id, number, strike, game_id from frames where id = $id".query[(Int, Int, Boolean, Int)].option
+  private def findFrameByGameIdAndNumber(gameId: Int, number: Option[Int]) =
+    sql"select id, number, strike, game_id from frames where game_id = $gameId and number = $number".query[(Int, Int, Boolean, Int)].unique
+  private def findFrameById(id: Option[Int]) =
+    sql"select id, number, strike, game_id from frames where id = $id".query[(Int, Int, Boolean, Int)].unique
 
-  def findById(id: Int): IO[Option[Frame]] = {
+  def findById(id: Option[Int]): IO[Frame] = {
     val query = for {
-      maybeFrame <- findFrameById(id)
+      maybeFrame <- {
+        val frameIO = findFrameById(id)
+        frameIO.map {
+          case (id, number, strike, _) => Frame(Some(id), Some(number), strike, None)
+        }
+      }
 
       maybeRolls <- maybeFrame match {
-        case Some((frameId, _, _, _)) => rollRepository.findRollsByFrameId(frameId)
-        case None => List.empty[(Int, Int, Int, Int)].pure[ConnectionIO]
+        case frame => rollRepository.findRollsByFrameId(frame.id)
       }
     } yield {
       val rolls: List[Roll] = maybeRolls.map(roll => Roll(Some(roll._1), Some(roll._2), Some(roll._3), None))
 
       maybeFrame match {
-        case Some(frame) => Some(Frame(Some(frame._1), Some(frame._2), frame._3, Some(rolls)))
-        case _ => None
+        case frame => Frame(frame.id, frame.number, frame.strike, Some(rolls))
       }
     }
     query.transact(xa)
   }
 
-  def save(frame: Frame, gameId: Int): IO[Option[Frame]] = {
+  def save(frame: Frame, gameId: Int): IO[Frame] = {
     val query = for {
-      frameExists <- findFrameByGameIdAndNumber(gameId, frame.number.get)
+      frameExists <- findFrameByGameIdAndNumber(gameId, frame.number)
 
       _ <- frameExists match {
-        case None => createFrame(gameId, frame.number.get, frame.strike)
-        case Some(queryReturn) => queryReturn.pure[ConnectionIO]
+        case _ => createFrame(gameId, frame.number, frame.strike)
       }
-      maybeFrame <- findFrameByGameIdAndNumber(gameId, frame.number.get)
+      maybeFrame <- {
+        val frameIO = findFrameByGameIdAndNumber(gameId, frame.number)
+        frameIO.map {
+          case (id, number, strike, _) => Frame(Some(id), Some(number), strike, None)
+        }
+      }
     } yield {
-      maybeFrame.map {
-        case (id, number, strike, _) => Frame(Some(id), Some(number), strike, None)
-      }
+      maybeFrame
     }
     query.transact(xa)
   }
