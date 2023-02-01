@@ -16,7 +16,7 @@ CREATE TABLE frames
 );
 
 ALTER TABLE frames
-    ADD FOREIGN KEY (game_id) REFERENCES games (id);
+    ADD FOREIGN KEY (game_id) REFERENCES games (id) on delete cascade;
 
 CREATE TABLE rolls
 (
@@ -28,4 +28,4 @@ CREATE TABLE rolls
 );
 
 ALTER TABLE rolls
-    ADD FOREIGN KEY (frame_id) REFERENCES frames (id);
+    ADD FOREIGN KEY (frame_id) REFERENCES frames (id) on delete cascade;
