@@ -11,13 +11,10 @@ class GameRepository(private val frameRepository: FrameRepository, private val r
 
   private def findGameById(id: Int) =
     sql"select id, name, complete from games where id = $id".query[(Int, String, Boolean)].option
-
   private def findGameByName(name: String) =
     sql"select id, name, complete from games where name = $name".query[(Int, String, Boolean)].option
-
   private def createGame(name: String) =
     sql"insert into games (name, complete) values ($name, false)".update.run
-
   private def deleteGame(id: Int) =
     sql"delete from games where id = $id".update.run
 
@@ -47,30 +44,26 @@ class GameRepository(private val frameRepository: FrameRepository, private val r
           Frame(Some(frame._1), Some(frame._2), frame._3, Some(frameRolls))
       }
 
-      maybeGame match {
-        case Some((id, name, complete)) => Some(Game(Some(id), Some(name), complete = complete, Some(frames)))
-        case _ => None
+      maybeGame.map {
+        case (id, name, complete) => Game(Some(id), Some(name), complete = complete, Some(frames))
       }
     }
     query.transact(xa)
   }
 
-  def save(game: Game): IO[Game] = {
+  def save(game: Game): IO[Option[Game]] = {
     val query = for {
       gameExists <- findGameByName(game.name.get)
 
       _ <- gameExists match {
         case None => createGame(game.name.get)
-
+        case Some(queryReturn) => queryReturn.pure[ConnectionIO]
       }
-      maybeGame <- {
-        val gameIO = findGameByName(game.name.get)
-        gameIO.map {
-          case Some((id, name, complete)) => Game(Some(id), Some(name), complete, None)
-        }
-      }
+      maybeGame <- findGameByName(game.name.get)
     } yield {
-      maybeGame
+      maybeGame.map {
+        case (id, name, complete) => Game(Some(id), Some(name), complete, None)
+      }
     }
     query.transact(xa)
   }

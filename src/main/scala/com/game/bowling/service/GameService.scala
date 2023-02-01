@@ -12,26 +12,37 @@ class GameService(private val gameRepository: GameRepository, private val frameS
     gameRepository.findById(id)
   }
 
-  def save(game: Game): IO[Game] = {
+  def save(game: Game): IO[Option[Game]] = {
     gameRepository.save(game)
   }
 
-  def roll(rollToSave: Roll, gameId: Int): IO[Game] = {
-    val gameIO = findById(gameId)
-    gameIO.map { game =>
-      val frames = frameService.getFrames(game)
-      val lastFrameFromDB = frameService.getLastFrame(frames)
-      val strike = rollToSave.score.contains(10)
-      frameService.insertRoll(lastFrameFromDB, rollToSave, gameId, strike)
-      game.get
+  def complete(gameId: Int): IO[Int] =
+    gameRepository.complete(gameId)
+
+  def roll(rollToSave: Roll, gameId: Int): IO[Option[Game]] = {
+    val game = findById(gameId)
+    game match {
+      case Some(game) =>
+        val frames: List[Frame] = frameService.getFrames(game)
+        val lastFrameFromDB: Option[Frame] = frameService.getLastFrame(frames)
+        val strike = rollToSave.score.contains(10)
+        frameService.insertRoll(lastFrameFromDB, rollToSave, gameId, strike)
+
+        findById(gameId)
+      case _ =>
+        None
     }
   }
 
-  def calculateScore(id: Int): IO[Int] = {
-    val gameIO = findById(id)
-    gameIO map { game =>
-      val frames: List[FrameDTO] = convertFrameToDTO(game.get.frames.get)
-      sumScore(frames, frames.size, 0)
+  def calculateScore(id: Int): Option[Int] = {
+    val game = findById(id)
+    game match {
+      case Some(game) =>
+        val frames: List[FrameDTO] = convertFrameToDTO(game.frames.get)
+        val score = sumScore(frames, frames.size, 0)
+        Some(score)
+      case _ =>
+        None
     }
   }
 
