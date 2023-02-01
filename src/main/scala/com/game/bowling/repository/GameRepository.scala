@@ -2,6 +2,7 @@ package com.game.bowling.repository
 
 import cats.data._
 import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import cats.implicits.catsSyntaxApplicativeId
 import com.game.bowling.model.{Frame, Game, Roll}
 import doobie.implicits._
@@ -21,7 +22,7 @@ class GameRepository(private val frameRepository: FrameRepository, private val r
   private def completeGame(id: Int) =
     sql"update games set complete = true where id = $id".update.run
 
-  def findById(id: Int): IO[Option[Game]] = {
+  def findById(id: Int): Option[Game] = {
     val query = for {
       maybeGame <- findGameById(id)
 
@@ -48,10 +49,10 @@ class GameRepository(private val frameRepository: FrameRepository, private val r
         case (id, name, complete) => Game(Some(id), Some(name), complete = complete, Some(frames))
       }
     }
-    query.transact(xa)
+    query.transact(xa).unsafeRunSync()
   }
 
-  def save(game: Game): IO[Option[Game]] = {
+  def save(game: Game): Option[Game] = {
     val query = for {
       gameExists <- findGameByName(game.name.get)
 
@@ -65,24 +66,24 @@ class GameRepository(private val frameRepository: FrameRepository, private val r
         case (id, name, complete) => Game(Some(id), Some(name), complete, None)
       }
     }
-    query.transact(xa)
+    query.transact(xa).unsafeRunSync()
   }
 
-  def delete(id: Int): IO[Int] = {
+  def delete(id: Int): Int = {
     val query = for {
       deleteResult <- deleteGame(id)
     } yield {
       deleteResult
     }
-    query.transact(xa)
+    query.transact(xa).unsafeRunSync()
   }
 
-  def complete(gameId: Int): IO[Int] = {
+  def complete(gameId: Int): Int = {
     val query = for {
       completeResult <- completeGame(gameId)
     } yield {
       completeResult
     }
-    query.transact(xa)
+    query.transact(xa).unsafeRunSync()
   }
 }

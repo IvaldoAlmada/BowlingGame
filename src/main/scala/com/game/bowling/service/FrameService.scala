@@ -1,6 +1,5 @@
 package com.game.bowling.service
 
-import cats.effect.IO
 import com.game.bowling.model.{Frame, Game, Roll}
 import com.game.bowling.repository.{FrameRepository, GameRepository}
 
@@ -11,7 +10,7 @@ class FrameService(private val frameRepository: FrameRepository, private val gam
   def getLastFrame(frames: List[Frame]): Option[Frame] =
     frames.reduceOption((a1, a2) => if (a1.number > a2.number) a1 else a2)
 
-  def createFrame(frame: Frame, gameId: Int): IO[Option[Frame]] = {
+  def createFrame(frame: Frame, gameId: Int): Option[Frame] = {
     frameRepository.save(frame, gameId)
   }
 
@@ -22,7 +21,7 @@ class FrameService(private val frameRepository: FrameRepository, private val gam
     }
   }
 
-  private def addRoll(rollToSave: Roll, frame: Frame): IO[Option[Frame]] = {
+  private def addRoll(rollToSave: Roll, frame: Frame): Option[Frame] = {
     val nextRollNumber = frame.rolls match {
       case Some(rolls) => rolls.head.number.get + 1
       case None => rollToSave.number.getOrElse(0) + 1
@@ -33,7 +32,7 @@ class FrameService(private val frameRepository: FrameRepository, private val gam
     frameRepository.findById(createdRoll.get.frameId.get)
   }
 
-  def insertRoll(lastFrameFromDB: Option[Frame], rollToSave: Roll, gameId: Int, strike: Boolean): IO[Option[Frame]] =
+  def insertRoll(lastFrameFromDB: Option[Frame], rollToSave: Roll, gameId: Int, strike: Boolean): Option[Frame] =
     lastFrameFromDB match {
       case Some(frame) =>
         val frameLastRoll = rollService.getLastRoll(frame.rolls.get)

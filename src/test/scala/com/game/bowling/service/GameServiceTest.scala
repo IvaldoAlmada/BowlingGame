@@ -44,7 +44,7 @@ class GameServiceTest extends AnyFlatSpec with Matchers {
     val game = Game(id = Some(gameId), name = Some("to calculate score"), complete = false, frames = Some(List(frame1, frame2, frame3, frame4)))
 
     when(gameRepository.findById(gameId)).thenReturn(Some(game))
-    assertResult(54si) {
+    assertResult(54) {
       gameService.calculateScore(gameId).get
     }
   }
