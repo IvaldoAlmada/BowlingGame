@@ -1,7 +1,6 @@
 package com.game.bowling.service
 
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
 import com.game.bowling.model.{Frame, Game, Roll}
 import com.game.bowling.repository.{FrameRepository, GameRepository}
 
@@ -28,10 +27,11 @@ class FrameService(private val frameRepository: FrameRepository, private val gam
       case Some(rolls) => rolls.head.number.get + 1
       case None => rollToSave.number.getOrElse(0) + 1
     }
-
     val nextRoll = Roll(None, None, rollToSave.score, None)
-    val createdRoll = rollService.createRoll(nextRoll, nextRollNumber, frame.id.get).unsafeRunSync()
-    frameRepository.findById(createdRoll.get.frameId.get)
+    for {
+      createdRoll <- rollService.createRoll(nextRoll, nextRollNumber, frame.id.get)
+      frame <- frameRepository.findById(createdRoll.get.frameId.get)
+    } yield frame
   }
 
   def insertRoll(lastFrameFromDB: Option[Frame], rollToSave: Roll, gameId: Int, strike: Boolean): IO[Option[Frame]] =
@@ -41,18 +41,22 @@ class FrameService(private val frameRepository: FrameRepository, private val gam
         if ((frameLastRoll.isDefined && frameLastRoll.get.number.get == 2) || frame.strike) {
           if (frame.number.isDefined && frame.number.get == 10) {
             gameRepository.complete(gameId)
-            frameRepository.findById(frame.id.get)
+            IO(lastFrameFromDB)
           } else {
             val nextFrameNumber = Some(frame.number.get + 1)
             val nextFrame = Frame(None, nextFrameNumber, strike, Some(List(rollToSave)))
-            val createdFrame = createFrame(nextFrame, gameId).unsafeRunSync()
-            addRoll(rollToSave, createdFrame.get)
+            for {
+              createdFrame <- createFrame(nextFrame, gameId)
+              frameWithRoll <- addRoll(rollToSave, createdFrame.get)
+            } yield frameWithRoll
           }
         }else {
           addRoll(rollToSave, frame)
         }
       case _ =>
-        val createdFrame = createFrame(Frame(None, Some(1), strike, Some(List(rollToSave))), gameId).unsafeRunSync()
-        addRoll(rollToSave, createdFrame.get)
+        for {
+          createdFrame <- createFrame(Frame(None, Some(1), strike, Some(List(rollToSave))), gameId)
+          frameWithRoll <- addRoll(rollToSave, createdFrame.get)
+        } yield frameWithRoll
     }
 }

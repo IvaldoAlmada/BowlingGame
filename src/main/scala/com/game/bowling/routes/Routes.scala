@@ -44,7 +44,7 @@ object Routes {
           case _ => NotFound(s"No game with id $gameId found")
         }
       case GET -> Root / "game" / gameId / "score" =>
-        val gameScore = gameService.calculateScore(gameId.toInt)
+        val gameScore = gameService.calculateScore(gameId.toInt).unsafeRunSync()
         gameScore match {
           case Some(score) => Ok(score.asJson)
           case _ => NotFound(s"Is Not possible to calculate score from game: $gameId")

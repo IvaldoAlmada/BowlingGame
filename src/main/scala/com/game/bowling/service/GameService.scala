@@ -34,27 +34,29 @@ class GameService(private val gameRepository: GameRepository, private val frameS
     }
   }
 
-  def calculateScore(id: Int): Option[Int] = {
-    val game = findById(id).unsafeRunSync()
-    game match {
-      case Some(game) =>
-        val frames: List[FrameDTO] = convertFrameToDTO(game.frames.get)
-        val score = sumScore(frames, frames.size, 0)
-        Some(score)
-      case _ =>
-        None
-    }
+  def calculateScore(id: Int): IO[Option[Int]] = {
+    for {
+      game <- findById(id)
+      gameScore <- game match {
+        case Some(game) =>
+          val frames: List[FrameDTO] = convertFrameToDTO(game.frames.get)
+          val score = sumScore(frames, frames.size, 0)
+          IO(score)
+        case _ =>
+          IO(None)
+      }
+    } yield gameScore
   }
 
   @tailrec
-  private def sumScore(frames: List[FrameDTO], framesSize: Int, total: Int): Int = {
+  private def sumScore(frames: List[FrameDTO], framesSize: Int, total: Int): Option[Int] = {
     val tempTotal = frames.headOption.getOrElse(FrameDTO(0, strike = false, 0)).sum
     val frameResult = if (frames.nonEmpty && frames.tail != Nil && frames.head.sum == 10) {
       val strikeResult: Int = getStrikeResult(frames)
       frames(1).roll1 + strikeResult
     } else 0
     if (frames.nonEmpty && frames.tail.nonEmpty && (framesSize - frames.tail.size) < 10) sumScore(frames.tail, framesSize, total + tempTotal + frameResult)
-    else total + tempTotal
+    else Some(total + tempTotal)
   }
 
   private def getStrikeResult(framesLeft: List[FrameDTO]): Int = {
