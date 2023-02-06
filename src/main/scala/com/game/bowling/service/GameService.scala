@@ -1,5 +1,7 @@
 package com.game.bowling.service
 
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import com.game.bowling.model.{Frame, FrameDTO, Game, Roll}
 import com.game.bowling.repository.GameRepository
 
@@ -7,34 +9,33 @@ import scala.annotation.tailrec
 
 class GameService(private val gameRepository: GameRepository, private val frameService: FrameService) {
 
-  def findById(id: Int): Option[Game] = {
+  def findById(id: Int): IO[Option[Game]] = {
     gameRepository.findById(id)
   }
 
-  def save(game: Game): Option[Game] = {
+  def save(game: Game): IO[Option[Game]] = {
     gameRepository.save(game)
   }
 
-  def complete(gameId: Int): Int =
+  def complete(gameId: Int): IO[Int] =
     gameRepository.complete(gameId)
 
   def roll(rollToSave: Roll, gameId: Int): Option[Game] = {
-    val game = findById(gameId)
+    val game = findById(gameId).unsafeRunSync()
     game match {
       case Some(game) =>
         val frames: List[Frame] = frameService.getFrames(game)
         val lastFrameFromDB: Option[Frame] = frameService.getLastFrame(frames)
         val strike = rollToSave.score.contains(10)
         frameService.insertRoll(lastFrameFromDB, rollToSave, gameId, strike)
-
-        findById(gameId)
+        findById(gameId).unsafeRunSync()
       case _ =>
         None
     }
   }
 
   def calculateScore(id: Int): Option[Int] = {
-    val game = findById(id)
+    val game = findById(id).unsafeRunSync()
     game match {
       case Some(game) =>
         val frames: List[FrameDTO] = convertFrameToDTO(game.frames.get)
@@ -78,8 +79,7 @@ class GameService(private val gameRepository: GameRepository, private val frameS
       FrameDTO(firstRoll.score.get, frame.strike, secondScore)
     })
 
-  def delete(id: Int): Int = {
+  def delete(id: Int): IO[Int] = {
     gameRepository.delete(id)
   }
-
 }
