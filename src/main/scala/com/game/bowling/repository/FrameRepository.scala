@@ -1,6 +1,7 @@
 package com.game.bowling.repository
 
 import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import cats.implicits.catsSyntaxApplicativeId
 import com.game.bowling.model.{Frame, Roll}
 import doobie.implicits._
@@ -36,7 +37,7 @@ class FrameRepository(val rollRepository: RollRepository, private val xa: Transa
     query.transact(xa)
   }
 
-  def save(frame: Frame, gameId: Int): IO[Option[Frame]] = {
+  def save(frame: Frame, gameId: Int): Option[Frame] = {
     val query = for {
       frameExists <- findFrameByGameIdAndNumber(gameId, frame.number.get)
 
@@ -50,6 +51,6 @@ class FrameRepository(val rollRepository: RollRepository, private val xa: Transa
         case (id, number, strike, _) => Frame(Some(id), Some(number), strike, None)
       }
     }
-    query.transact(xa)
+    query.transact(xa).unsafeRunSync()
   }
 }

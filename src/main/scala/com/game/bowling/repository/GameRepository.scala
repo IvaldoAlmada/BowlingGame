@@ -27,10 +27,8 @@ class GameRepository(private val frameRepository: FrameRepository, private val r
 
       maybeFrames <- maybeGame match {
         case Some((gameId, _, _)) => frameRepository.findFramesByGameId(gameId)
-        case None => List.empty[(Int, Int, Boolean, Int)].pure[ConnectionIO]
       }
       maybeRolls <- maybeFrames match {
-        case Nil => List.empty[(Int, Int, Int, Int)].pure[ConnectionIO]
         case frameList =>
           val frameIds = frameList.map(tuple => tuple._1)
           rollRepository.findRollsByFrameIdList(NonEmptyList.fromList(frameIds).get)
