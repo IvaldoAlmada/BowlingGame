@@ -1,5 +1,6 @@
 package com.game.bowling.routes
 
+import cats.effect.unsafe.implicits.global
 import cats.effect.{Concurrent, IO}
 import cats.implicits._
 import com.game.bowling.model.{Game, Roll}
@@ -37,13 +38,13 @@ object Routes {
     implicit val rollDecoder: EntityDecoder[F, Roll] = jsonOf[F, Roll]
     HttpRoutes.of[F] {
       case GET -> Root / "game" / gameId =>
-        val gameById = gameService.findById(gameId.toInt)
+        val gameById = gameService.findById(gameId.toInt).unsafeRunSync()
         gameById match {
           case Some(game) => Ok(game.asJson)
           case _ => NotFound(s"No game with id $gameId found")
         }
       case GET -> Root / "game" / gameId / "score" =>
-        val gameScore = gameService.calculateScore(gameId.toInt)
+        val gameScore = gameService.calculateScore(gameId.toInt).unsafeRunSync()
         gameScore match {
           case Some(score) => Ok(score.asJson)
           case _ => NotFound(s"Is Not possible to calculate score from game: $gameId")
@@ -51,8 +52,13 @@ object Routes {
       case req@POST -> Root / "game" =>
         for {
           game <- req.as[Game]
-          savedGame = gameService.save(game)
-          res <- Ok(savedGame)
+          savedGame = gameService.save(game).unsafeRunSync()
+          res <- {
+            savedGame match {
+              case Some(game) => Ok(game)
+              case None => NotAcceptable("Cannot create game")
+            }
+          }
         } yield res
       case req@PUT -> Root / "game" / gameId / "roll" =>
         for {
@@ -60,7 +66,7 @@ object Routes {
           gameWithRoll = gameService.roll(roll, gameId.toInt)
           res <- gameWithRoll match {
             case Some(game) =>
-              if(game.complete)
+              if (game.complete)
                 NotAcceptable("Cannot add more rolls, game completed")
               else
                 Ok(game)
@@ -68,7 +74,7 @@ object Routes {
           }
         } yield res
       case DELETE -> Root / "game" / gameId =>
-        val deletedFiles = gameService.delete(gameId.toInt)
+        val deletedFiles = gameService.delete(gameId.toInt).unsafeRunSync()
         Ok(s"Deleted $deletedFiles games")
     }
   }

@@ -18,7 +18,7 @@ class FrameRepository(val rollRepository: RollRepository, private val xa: Transa
   private def findFrameById(id: Int) =
     sql"select id, number, strike, game_id from frames where id = $id".query[(Int, Int, Boolean, Int)].option
 
-  def findById(id: Int): Option[Frame] = {
+  def findById(id: Int): IO[Option[Frame]] = {
     val query = for {
       maybeFrame <- findFrameById(id)
 
@@ -34,7 +34,7 @@ class FrameRepository(val rollRepository: RollRepository, private val xa: Transa
         case _ => None
       }
     }
-    query.transact(xa).unsafeRunSync()
+    query.transact(xa)
   }
 
   def save(frame: Frame, gameId: Int): Option[Frame] = {
